@@ -1,0 +1,8 @@
+# Environment file
+.idea
+.DS_Store
+.sublime
+**/*.DS_Store
+# Running
+dnsmasq.conf
+certs
