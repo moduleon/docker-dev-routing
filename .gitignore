@@ -4,5 +4,6 @@
 .sublime
 **/*.DS_Store
 # Running
-dnsmasq.conf
+dnsmasq-ext.conf
+dnsmasq-int.conf
 certs

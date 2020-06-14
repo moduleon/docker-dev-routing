@@ -14,39 +14,17 @@ help:  ## Display this help
 #
 
 start: ## Start nginx-proxy & dnsmasq & create needed files
-	@${MAKE} generate_certificate;
-	@docker run -d \
-		--name nginx-proxy \
-		-p 80:80 \
-		-p 443:443 \
-		-v /var/run/docker.sock:/tmp/docker.sock:ro \
-		-v ${PWD}/certs:/etc/nginx/certs:ro \
-		--restart unless-stopped \
-		jwilder/nginx-proxy:alpine \
-	;
 	@${MAKE} generate_dnsmasq_config;
 	@${MAKE} add_resolver;
-	@docker run -u root -d \
-		--name dnsmasq \
-		--cap-add NET_ADMIN \
-		-p 53:53/tcp \
-		-p 53:53/udp \
-		-v ${PWD}/dnsmasq.conf:/etc/dnsmasq.conf \
-		--restart unless-stopped \
-		andyshinn/dnsmasq \
-	;
+	@docker-compose up;
 
 stop: ## Stop nginx-proxy & dnsmasq & remove files
-	@docker stop nginx-proxy && \
-	docker rm -v nginx-proxy && \
-	docker stop dnsmasq && \
-	docker rm -v dnsmasq && \
+	@docker-compose down && \
 	${MAKE} remove_resolver && \
-	${MAKE} remove_certificate && \
 	${MAKE} remove_dsnmasq_config \
 ;
 
-generate_certificate:
+generate_certificate: ## Generate a trusted certificate for local domain
 	@docker run --rm \
 		-v ${PWD}/certs:/root/.local/share/mkcert \
 		vishnunair/docker-mkcert \
@@ -66,12 +44,14 @@ remove_certificate: ## Remove certificate generated for local domain
 ;
 
 generate_dnsmasq_config: ## Generate dnsmasq config in host
-	@cp ${PWD}/dnsmasq.conf.dist ${PWD}/dnsmasq.conf && \
-	sudo bash -c 'echo "address=/.${LOCAL_DOMAIN}/127.0.0.1" >> ${PWD}/dnsmasq.conf' \
+	@cp ${PWD}/dnsmasq.conf.dist ${PWD}/dnsmasq-ext.conf && \
+	cp ${PWD}/dnsmasq.conf.dist ${PWD}/dnsmasq-int.conf && \
+	sudo bash -c 'echo "address=/.${LOCAL_DOMAIN}/127.0.0.1" >> ${PWD}/dnsmasq-ext.conf' && \
+	sudo bash -c 'echo "address=/.${LOCAL_DOMAIN}/172.25.0.255" >> ${PWD}/dnsmasq-int.conf' \
 ;
 
 remove_dsnmasq_config: ## Remove dnsmasq config generated in host
-	@rm ${PWD}/dnsmasq.conf;
+	@rm ${PWD}/dnsmasq-ext.conf && rm ${PWD}/dnsmasq-int.conf;
 
 add_resolver: ## Add resolver for local domain in host
 	@sudo bash -c 'echo "nameserver 127.0.0.1" > /etc/resolver/${LOCAL_DOMAIN}';
@@ -79,14 +59,11 @@ add_resolver: ## Add resolver for local domain in host
 remove_resolver: ## Remove resolver for local domain in host
 	@sudo rm /etc/resolver/${LOCAL_DOMAIN};
 
-flush_dns_cache: ## Flush dns cache for mac
-	@sudo killall -HUP mDNSResponder;
-
-setup_dns_servers: ## Setup all servers for mac
-	@sudo networksetup -setdnsservers Wi-Fi 127.0.0.1 192.168.1.1 8.8.8.8 8.8.4.4;
-
 terminal: ## Enter in nginx-proxy terminal
 	@docker exec -it nginx-proxy /bin/bash;
 
-terminal-dnsmasq: ## Enter in dnsmasq terminal
-	@docker exec -it dnsmasq /bin/sh;
+terminal-dnsmasq-ext: ## Enter in dnsmasq for host terminal
+	@docker exec -it dnsmasq-ext /bin/sh;
+
+terminal-dnsmasq-int: ## Enter in dnsmasq for containers terminal
+	@docker exec -it dnsmasq-int /bin/sh;

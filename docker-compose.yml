@@ -1,0 +1,45 @@
+version: "3"
+
+services:
+  # Nginx proxy container
+  nginx-proxy:
+    image: jwilder/nginx-proxy:alpine
+    container_name: nginx-proxy
+    networks:
+      default:
+        ipv4_address: 172.25.0.255
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./certs:/etc/nginx/certs:ro
+    restart: unless-stopped
+  # Dnsmsq for host
+  dnsmasq-ext:
+    image: andyshinn/dnsmasq
+    container_name: dnsmasq-ext
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+    volumes:
+      - ./dnsmasq-ext.conf:/etc/dnsmasq.conf
+    restart: unless-stopped
+  # Dnsmasq for containers
+  dnsmasq-int:
+    image: andyshinn/dnsmasq
+    container_name: dnsmasq-int
+    networks:
+      default:
+        ipv4_address: 172.25.0.254
+    volumes:
+      - ./dnsmasq-int.conf:/etc/dnsmasq.conf
+    restart: unless-stopped
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.25.0.0/16
