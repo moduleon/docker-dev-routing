@@ -1,4 +1,4 @@
-version: "3"
+version: "3.7"
 
 services:
   # Nginx proxy container
@@ -15,7 +15,7 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - ./certs:/etc/nginx/certs:ro
     restart: unless-stopped
-  # Dnsmsq for host
+  # Dnsmasq for host
   dnsmasq-ext:
     image: andyshinn/dnsmasq
     container_name: dnsmasq-ext
@@ -38,6 +38,7 @@ services:
 
 networks:
   default:
+    name: common
     driver: bridge
     ipam:
       driver: default

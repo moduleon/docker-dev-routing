@@ -1,30 +1,75 @@
-This project is a stack with a preconfigured stack running nginx-proxy, dnsmasq, and mkcert.
+# Docker dev routing
 
-This has been done for MacOs.
+This project is a Docker stack handling routing to containers during development.
 
-What to do to make it work.
+When you come to work with docker locally, you can expose your containers on a given host ports, or eventually, you bind them to an url, and with a solution like jwilder/nginx-proxy, you achieve that goal pretty easily. But, because there is always a but, you have to update your /etc/hosts. And if you want your containers to communicate through their respective url, you will have to bind them (for eg, --link my-container-name:my-freaky-url.test). Furthermore, this linking makes them now codependant, and you can not run one without the other.
 
-First in .env, set your local domain. By default, it is `docker.local`. Just avoid `.dev` (Top level domain belongs to Google), `.local` (used by mDNSResponder on MacOs).
+So, here it is. I want my containers to be accesible through an url from my host if they are exposed, and I want them to be able to communicate through their url without having to link them. If you are at this point, like me, you are in the good place.
 
-Then run
+The current stack does exactly that.
+
+It uses dnsmasq for redirecting calls made to a prefined local host name (by default docker.local) to the localhost. Then, it uses jwilder/nginx-proxy for redirecting calls made to localhost to container having a matching VIRTUAL_HOST environment variable.
+
+Thus, you will never have to declare your VIRTUAL_HOST in /etc/hosts again. And you will no longer need to link your containers to make them communicate if they are exposed for a given url.
+
+So, how to make it started ?
+
+Simple. First, define what will be your local domain. By default, it is docker.local, but you can override it in .env file. But, (yes, I am tired of that too), you must NOT use .dev (top level domain exist since early 2019, and is managed by Google). And if you are ussing a Mac, should avoid using .local, because it is used internally by the OS (mDNSResponder service to be exact, for a freaky Macbook of whoever.local). If you do, you would need to define your VIRTUAL_HOST in /etc/hosts. It would be too bad. Just choose something else, like .test, or let it like this, .docker.local.
+
+Then run in your terminal:
+
 ```sh
 $ make start
 ```
 
-This will run nginx-proxy, which will capture requests sent to localhost, and redirect them to containers if url is matching a VIRTUAL_HOST declared as environment variable among them. (visit https://github.com/nginx-proxy/nginx-proxy);
+This will run nginx-proxy, which will capture requests sent to localhost, and redirect them to containers if url is matching a VIRTUAL_HOST declared as environment variable among them. (visit https://github.com/nginx-proxy/nginx-proxy). This will also run dnsmasq for redirecting every request made on an address ending with the domain set in .env.
 
-This will also run dnsmasq for redirecting every request made on an address ending with the domain set in .env.
+Okay, from now you will have to add a configuration in your containers stack.
 
-And finally, this will run mkcert for generating a valid certificate for the domain set in .env, and will add it in the local keychain of your machine (again, this was made for mac, you would have to make some research for another OS). This action requires to be run as root. So you will be asked for the root password.
+First, you will plug your containers on network common. So if your using command lines, it will be something like --net common. If you are using docker-compose, it will be something like adding these lines:
 
-If everything worked as expected, you just have to run a container with a VIRTUAL_HOST environment variable ending with the host declared in .env. No other action is required, like editing /etc/hosts. Just hit its VIRTUAL_HOST with a curl, you will see a response.
-
-By the way, the certificate generated is valid for the domain, and all subdomain, so the ssl is already enabled for your container without having to do any action about it.
-
-For stopping the stack, just run
-
+```yaml
+networks:
+  default:
+    external:
+      name: common
 ```
+
+Secondly, you will add a dns info to each container how want to communicate freely with others. With pure docker, something like --dns 172.25.0.254, and in docker-compose, something like:
+
+```yaml
+services:
+  web:
+    ...
+   dns: 172.25.0.254
+```
+
+And now, you free to go. Just make a docker-compose up, try a curl from your host on one of your container VIRTUAL_HOST, you will get a response. And try within a container to curl to another the same way, you will get a result too.
+
+Okay, it would have been nice not to had this extra config to your containers, I agree, and i am working on it. But it is a great start right ?
+
+(Mac users only for now)
+To make you feel better, I gave you something more. And what if you could access your containers url with https with a valid certificate ? For that, run:
+
+```sh
+$ make generate_certificate
+```
+
+Action is run in sudo to grant access to the local keychain, so you will be asked for your password. Now, all containers having your local domain are reachable on 443 port.
+
+You want to stop it, fine! Run:
+
+```sh
+$ make remove_certificate
+```
+
+That's it.
+
+Ok, now you want to shut down everything? Run:
+
+```sh
 $ make stop
 ```
 
-It will stop nginx-poxy and dnsmasq, and will clear local keychain from the certificate originally generated for running the stack. So, once again, this action needs root access, and a password will be asked.
+That's it.
+
