@@ -16,13 +16,16 @@ help:  ## Display this help
 start: ## Start nginx-proxy & dnsmasq & create needed files
 	@${MAKE} generate_dnsmasq_config;
 	@${MAKE} add_resolver;
-	@docker-compose up;
+	@docker-compose up -d;
 
 stop: ## Stop nginx-proxy & dnsmasq & remove files
 	@docker-compose down && \
 	${MAKE} remove_resolver && \
 	${MAKE} remove_dsnmasq_config \
 ;
+
+logs: ## Show containers logs
+	@docker-compose logs -f;
 
 generate_certificate: ## Generate a trusted certificate for local domain
 	@docker run --rm \
