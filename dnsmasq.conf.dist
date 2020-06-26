@@ -2,8 +2,3 @@
 listen-address=0.0.0.0
 interface=eth0
 user=root
-
-# only use these nameservers
-no-resolv
-server=8.8.8.8
-server=8.8.4.4
