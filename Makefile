@@ -29,8 +29,10 @@ logs: ## Show containers logs
 
 generate_certificate: ## Generate a trusted certificate for local domain
 	@docker run --rm \
-		-v ${PWD}/certs:/root/.local/share/mkcert \
-		vishnunair/docker-mkcert \
+		-v ${PWD}/certs:/opt/mkcert/data \
+		--workdir /opt/mkcert/data \
+		-e CAROOT=/opt/mkcert/data \
+		flesch/mkcert:latest \
 		mkcert -install *.${LOCAL_DOMAIN} \
 	;
 	@mv ${PWD}/certs/*.${LOCAL_DOMAIN}-key.pem ${PWD}/certs/${LOCAL_DOMAIN}.key && \
@@ -57,7 +59,7 @@ remove_dsnmasq_config: ## Remove dnsmasq config generated in host
 	@rm ${PWD}/dnsmasq-ext.conf && rm ${PWD}/dnsmasq-int.conf;
 
 add_resolver: ## Add resolver for local domain in host
-	@sudo bash -c 'echo "nameserver 127.0.0.1" > /etc/resolver/${LOCAL_DOMAIN}';
+	@sudo mkdir -p /etc/resolver && sudo bash -c 'echo "nameserver 127.0.0.1" > /etc/resolver/${LOCAL_DOMAIN}';
 
 remove_resolver: ## Remove resolver for local domain in host
 	@sudo rm /etc/resolver/${LOCAL_DOMAIN};
