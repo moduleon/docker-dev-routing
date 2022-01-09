@@ -33,10 +33,8 @@ generate_certificate: ## Generate a trusted certificate for local domain
 		--workdir /opt/mkcert/data \
 		-e CAROOT=/opt/mkcert/data \
 		flesch/mkcert:latest \
-		mkcert -install *.${LOCAL_DOMAIN} \
-	;
-	@mv ${PWD}/certs/*.${LOCAL_DOMAIN}-key.pem ${PWD}/certs/${LOCAL_DOMAIN}.key && \
-	mv ${PWD}/certs/*.${LOCAL_DOMAIN}.pem ${PWD}/certs/${LOCAL_DOMAIN}.crt && \
+		mkcert -key-file ${LOCAL_DOMAIN}.key -cert-file ${LOCAL_DOMAIN}.crt *.${LOCAL_DOMAIN} ${SUB_DOMAINS} \
+	; \
 	sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ${PWD}/certs/rootCA.pem \
 ;
 

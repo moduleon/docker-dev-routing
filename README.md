@@ -60,6 +60,8 @@ $ make generate_certificate
 
 Action is run in sudo to grant access to the local keychain, so you will be asked for your password. Now, all containers having your local domain are reachable on 443 port.
 
+But, if you want to have containers bound to a subdomain having more than one level from your base local domain (for example: api.mycompanyname.docker.local instead of api.docker.local), then certificate will be considered as invalid. In those case, you can add subdomains in .env file in the *SUB_DOMAINS* variable, separated by a space. For the previous example, it would be like `SUB_DOMAINS=api.mycompanyname.docker.local`. You can also add a wildcard to match all domains for your subdomain (`SUB_DOMAINS=*.mycompanyname.docker.local`). Once done, you will have to regenerate the certificate (run `make remove_certificate && make generate_certificate`).
+
 You want to stop it, fine! Run:
 
 ```sh
@@ -75,4 +77,3 @@ $ make stop
 ```
 
 That's it.
-
