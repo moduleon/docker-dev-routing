@@ -38,6 +38,8 @@ services:
     restart: unless-stopped
 
 networks:
+  app_subnet:
+    external: false
   default:
     name: common
     driver: bridge

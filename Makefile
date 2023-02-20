@@ -28,40 +28,41 @@ logs: ## Show containers logs
 	@docker-compose logs -f;
 
 generate_certificate: ## Generate a trusted certificate for local domain
-	echo "${PWD}/certs";
 	@docker run --rm \
-		-v ${PWD}/certs://opt/mkcert/data \
-		--workdir //opt/mkcert/data \
-		-e CAROOT=//opt/mkcert/data \
+		-v ${PWD}/certs:/opt/mkcert/data \
+		--workdir /opt/mkcert/data \
+		-e CAROOT=/opt/mkcert/data \
 		flesch/mkcert:latest \
-		mkcert -key-file "${LOCAL_DOMAIN}".key -cert-file "${LOCAL_DOMAIN}".crt *.${LOCAL_DOMAIN} ${SUB_DOMAINS} \
+		mkcert -key-file ${LOCAL_DOMAIN}.key -cert-file ${LOCAL_DOMAIN}.crt *.${LOCAL_DOMAIN} ${SUB_DOMAINS} \
 	; \
-	certutil -addstore -f "ROOT" ${PWD}/certs/rootCA.pem \
+	sudo cp ${PWD}/certs/rootCA.pem /usr/local/share/ca-certificates/rootCA.pem && \
+	sudo cp ${PWD}/certs/${LOCAL_DOMAIN}.crt /usr/local/share/ca-certificates/${LOCAL_DOMAIN}.crt && \
+	sudo update-ca-certificates \
 ;
 
 remove_certificate: ## Remove certificate generated for local domain
 	@rm ${PWD}/certs/${LOCAL_DOMAIN}.key && \
 	rm ${PWD}/certs/${LOCAL_DOMAIN}.crt && \
-	certutil -delstore "ROOT" ${PWD}/certs/rootCA.pem && \
-	rm ${PWD}/certs/rootCA-key.pem -f && \
+	sudo update-ca-certificates --fresh  && \
+	rm ${PWD}/certs/rootCA-key.pem && \
 	rm ${PWD}/certs/rootCA.pem \
 ;
 
 generate_dnsmasq_config: ## Generate dnsmasq config in host
 	@cp ${PWD}/dnsmasq.conf.dist ${PWD}/dnsmasq-ext.conf && \
 	cp ${PWD}/dnsmasq.conf.dist ${PWD}/dnsmasq-int.conf && \
-	bash -c 'echo "address=/.${LOCAL_DOMAIN}/127.0.0.1" >> ${PWD}/dnsmasq-ext.conf' && \
-	bash -c 'echo "address=/.${LOCAL_DOMAIN}/172.25.0.255" >> ${PWD}/dnsmasq-int.conf' \
+	sudo bash -c 'echo "address=/.${LOCAL_DOMAIN}/127.0.0.1" >> ${PWD}/dnsmasq-ext.conf' && \
+	sudo bash -c 'echo "address=/.${LOCAL_DOMAIN}/172.25.0.255" >> ${PWD}/dnsmasq-int.conf' \
 ;
 
 remove_dsnmasq_config: ## Remove dnsmasq config generated in host
 	@rm ${PWD}/dnsmasq-ext.conf && rm ${PWD}/dnsmasq-int.conf;
 
 add_resolver: ## Add resolver for local domain in host
-	@mkdir -p /etc/resolver && bash -c 'echo "nameserver 127.0.0.1" > /etc/resolver/${LOCAL_DOMAIN}';
+	@sudo mkdir -p /etc/resolver && sudo bash -c 'echo "nameserver 127.0.0.1" > /etc/resolver/${LOCAL_DOMAIN}';
 
 remove_resolver: ## Remove resolver for local domain in host
-	@rm /etc/resolver/${LOCAL_DOMAIN};
+	@sudo rm /etc/resolver/${LOCAL_DOMAIN};
 
 terminal: ## Enter in nginx-proxy terminal
 	@docker exec -it nginx-proxy /bin/bash;
