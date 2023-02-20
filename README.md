@@ -1,5 +1,10 @@
 # Docker dev routing
 
+> ⚠️ For Windows
+> 
+> Use the git bash terminal with administrator rights to use makeFile commands
+
+
 > This project is a Docker stack handling routing to containers during development.
 
 When you come to work with docker locally, you can expose your containers on a given host ports, or eventually, you bind them to an url, and with a solution like jwilder/nginx-proxy, you achieve that goal pretty easily. But, because there is always a but, you have to update your /etc/hosts. And if you want your containers to communicate through their respective url, you will have to bind them (for example with option `--link my-container-name:my-freaky-url.test`). Furthermore, this linking makes them now codependant, and you can not run one without the other.
