@@ -35,13 +35,15 @@ generate_certificate: ## Generate a trusted certificate for local domain
 		flesch/mkcert:latest \
 		mkcert -key-file ${LOCAL_DOMAIN}.key -cert-file ${LOCAL_DOMAIN}.crt *.${LOCAL_DOMAIN} ${SUB_DOMAINS} \
 	; \
-	sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ${PWD}/certs/rootCA.pem \
+	sudo cp ${PWD}/certs/rootCA.pem /usr/local/share/ca-certificates/rootCA.pem && \
+	sudo cp ${PWD}/certs/${LOCAL_DOMAIN}.crt /usr/local/share/ca-certificates/${LOCAL_DOMAIN}.crt && \
+	sudo update-ca-certificates \
 ;
 
 remove_certificate: ## Remove certificate generated for local domain
 	@rm ${PWD}/certs/${LOCAL_DOMAIN}.key && \
 	rm ${PWD}/certs/${LOCAL_DOMAIN}.crt && \
-	sudo security remove-trusted-cert -d ${PWD}/certs/rootCA.pem && \
+	sudo update-ca-certificates --fresh  && \
 	rm ${PWD}/certs/rootCA-key.pem && \
 	rm ${PWD}/certs/rootCA.pem \
 ;
